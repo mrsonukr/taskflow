@@ -43,7 +43,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
   const login = async (identifier: string, password: string) => {
     try {
-      const response = await fetch('https://task-backend-2tiy.onrender.com/api/auth/login', {
+      const response = await fetch('https://task-server-dusky.vercel.app/api/auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -84,7 +84,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
   const register = async (fullName: string, username: string, email: string, password: string) => {
     try {
-      const response = await fetch('https://task-backend-2tiy.onrender.com/api/auth/register', {
+      const response = await fetch('https://task-server-dusky.vercel.app/api/auth/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -126,7 +126,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
         return [];
       }
 
-      const response = await fetch(`https://task-backend-2tiy.onrender.com/api/users/search?query=${encodeURIComponent(query)}`, {
+      const response = await fetch(`https://task-server-dusky.vercel.app/api/users/search?query=${encodeURIComponent(query)}`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
