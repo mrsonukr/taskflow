@@ -57,9 +57,10 @@ const formSchema = z.object({
 interface AddTaskDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  isAdmin?: boolean;
 }
 
-export function AddTaskDialog({ open, onOpenChange }: AddTaskDialogProps) {
+export function AddTaskDialog({ open, onOpenChange, isAdmin = false }: AddTaskDialogProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedUsers, setSelectedUsers] = useState<User[]>([]);
   const [step, setStep] = useState<"users" | "details">("users");
@@ -166,6 +167,7 @@ export function AddTaskDialog({ open, onOpenChange }: AddTaskDialogProps) {
                 control={form.control}
                 name="title"
                 render={({ field }) => (
+                  
                   <FormItem>
                     <FormLabel>Task Title</FormLabel>
                     <FormControl>
@@ -282,13 +284,20 @@ export function AddTaskDialog({ open, onOpenChange }: AddTaskDialogProps) {
                   </FormItem>
                 )}
               />
-              <DialogFooter>
+              <div className="flex items-center justify-between">
                 <Button
                   type="button"
                   variant="outline"
                   onClick={() => setStep("users")}
+                  className="gap-2"
                 >
-                  Back
+                  <Users2 className="h-4 w-4" />
+                  Edit Assigned Users ({selectedUsers.length})
+                </Button>
+              </div>
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={handleClose}>
+                  Cancel
                 </Button>
                 <Button type="submit" disabled={isSubmitting}>
                   {isSubmitting ? (

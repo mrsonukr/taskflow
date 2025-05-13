@@ -27,8 +27,8 @@ export type Task = {
   priority: TaskPriority;
   dueDate: string;
   createdAt: string;
-  createdBy: User; // User object with id and fullName
-  assignedTo: User[]; // Array of User objects
+  createdBy: User;
+  assignedTo: User[];
 };
 
 export type Notification = {
@@ -44,6 +44,9 @@ export type Notification = {
 type TaskContextType = {
   tasks: Task[];
   notifications: Notification[];
+  totalPages: number;
+  currentPage: number;
+  setCurrentPage: (page: number) => void;
   createTask: (task: Omit<Task, "id" | "createdAt">) => Promise<void>;
   updateTask: (
     taskId: string,
@@ -54,6 +57,7 @@ type TaskContextType = {
   deleteTask: (taskId: string) => Promise<void>;
   getTasksAssignedToMe: () => Task[];
   getTasksCreatedByMe: () => Task[];
+  getAllTasks: (page: number) => Promise<void>;
   getUnreadNotificationsCount: () => number;
   markNotificationAsRead: (notificationId: string) => Promise<void>;
 };
@@ -63,6 +67,8 @@ const TaskContext = createContext<TaskContextType | undefined>(undefined);
 export function TaskProvider({ children }: { children: ReactNode }) {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [totalPages, setTotalPages] = useState(1);
+  const [currentPage, setCurrentPage] = useState(1);
   const { currentUser, logout } = useUser();
   const router = useRouter();
 
@@ -166,9 +172,65 @@ export function TaskProvider({ children }: { children: ReactNode }) {
       }
     };
 
-    fetchTasks();
+    if (currentUser.role !== 'admin') {
+      fetchTasks();
+    }
     fetchNotifications();
   }, [currentUser, logout, router]);
+
+  // Get all tasks (admin only)
+  const getAllTasks = async (page: number) => {
+    if (!currentUser || currentUser.role !== 'admin') {
+      return;
+    }
+
+    try {
+      const res = await fetch(
+        `https://task-backend-2tiy.onrender.com/api/tasks?page=${page}&limit=9`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("taskflow_token")}`,
+          },
+        }
+      );
+
+      if (res.status === 401) {
+        toast.error("Session expired. Please log in again.");
+        logout();
+        router.push("/");
+        return;
+      }
+
+      if (res.ok) {
+        const data = await res.json();
+        setTasks(
+          data.tasks.map((task: any) => ({
+            id: task._id,
+            title: task.title,
+            description: task.description,
+            status: task.status,
+            priority: task.priority,
+            dueDate: task.dueDate,
+            createdAt: task.createdAt,
+            createdBy: {
+              id: task.createdBy._id,
+              fullName: task.createdBy.fullName || "Unknown",
+            },
+            assignedTo: task.assignedTo.map((user: any) => ({
+              id: user._id,
+              fullName: user.fullName || "Unknown",
+            })),
+          }))
+        );
+        setTotalPages(Math.ceil(data.total / 9));
+      } else {
+        toast.error("Failed to fetch tasks");
+      }
+    } catch (error) {
+      console.error("Error fetching all tasks:", error);
+      toast.error("Error fetching tasks");
+    }
+  };
 
   // Create a new task
   const createTask = async (taskData: Omit<Task, "id" | "createdAt">) => {
@@ -203,26 +265,31 @@ export function TaskProvider({ children }: { children: ReactNode }) {
 
       if (res.ok) {
         const newTask = await res.json();
-        setTasks((prev) => [
-          {
-            id: newTask._id,
-            title: newTask.title,
-            description: newTask.description,
-            status: newTask.status,
-            priority: newTask.priority,
-            dueDate: newTask.dueDate,
-            createdAt: newTask.createdAt,
-            createdBy: {
-              id: newTask.createdBy._id,
-              fullName: newTask.createdBy.fullName || "Unknown",
+        if (currentUser.role === 'admin') {
+          // Refresh the task list for admin
+          getAllTasks(currentPage);
+        } else {
+          setTasks((prev) => [
+            {
+              id: newTask._id,
+              title: newTask.title,
+              description: newTask.description,
+              status: newTask.status,
+              priority: newTask.priority,
+              dueDate: newTask.dueDate,
+              createdAt: newTask.createdAt,
+              createdBy: {
+                id: newTask.createdBy._id,
+                fullName: newTask.createdBy.fullName || "Unknown",
+              },
+              assignedTo: newTask.assignedTo.map((user: any) => ({
+                id: user._id,
+                fullName: user.fullName || "Unknown",
+              })),
             },
-            assignedTo: newTask.assignedTo.map((user: any) => ({
-              id: user._id,
-              fullName: user.fullName || "Unknown",
-            })),
-          },
-          ...prev,
-        ]);
+            ...prev,
+          ]);
+        }
         toast.success("Task created successfully");
       } else {
         const error = await res.json();
@@ -271,24 +338,29 @@ export function TaskProvider({ children }: { children: ReactNode }) {
 
       if (res.ok) {
         const updatedTask = await res.json();
-        setTasks((prev) =>
-          prev.map((task) =>
-            task.id === taskId
-              ? {
-                  ...task,
-                  title: updatedTask.title,
-                  description: updatedTask.description,
-                  status: updatedTask.status,
-                  priority: updatedTask.priority,
-                  dueDate: updatedTask.dueDate,
-                  assignedTo: updatedTask.assignedTo.map((user: any) => ({
-                    id: user._id,
-                    fullName: user.fullName || "Unknown",
-                  })),
-                }
-              : task
-          )
-        );
+        if (currentUser.role === 'admin') {
+          // Refresh the task list for admin
+          getAllTasks(currentPage);
+        } else {
+          setTasks((prev) =>
+            prev.map((task) =>
+              task.id === taskId
+                ? {
+                    ...task,
+                    title: updatedTask.title,
+                    description: updatedTask.description,
+                    status: updatedTask.status,
+                    priority: updatedTask.priority,
+                    dueDate: updatedTask.dueDate,
+                    assignedTo: updatedTask.assignedTo.map((user: any) => ({
+                      id: user._id,
+                      fullName: user.fullName || "Unknown",
+                    })),
+                  }
+                : task
+            )
+          );
+        }
         toast.success("Task updated successfully");
       } else {
         const error = await res.json();
@@ -329,11 +401,16 @@ export function TaskProvider({ children }: { children: ReactNode }) {
 
       if (res.ok) {
         const updatedTask = await res.json();
-        setTasks((prev) =>
-          prev.map((task) =>
-            task.id === taskId ? { ...task, status: updatedTask.status } : task
-          )
-        );
+        if (currentUser.role === 'admin') {
+          // Refresh the task list for admin
+          getAllTasks(currentPage);
+        } else {
+          setTasks((prev) =>
+            prev.map((task) =>
+              task.id === taskId ? { ...task, status: updatedTask.status } : task
+            )
+          );
+        }
         toast.success(`Task status updated to: ${status}`);
       } else {
         const error = await res.json();
@@ -353,7 +430,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     }
 
     const task = tasks.find((t) => t.id === taskId);
-    if (task && task.createdBy.id !== currentUser.id) {
+    if (!currentUser.role === 'admin' && task && task.createdBy.id !== currentUser.id) {
       toast.error("Only the task creator can change the priority");
       return;
     }
@@ -377,13 +454,18 @@ export function TaskProvider({ children }: { children: ReactNode }) {
 
       if (res.ok) {
         const updatedTask = await res.json();
-        setTasks((prev) =>
-          prev.map((task) =>
-            task.id === taskId
-              ? { ...task, priority: updatedTask.priority }
-              : task
-          )
-        );
+        if (currentUser.role === 'admin') {
+          // Refresh the task list for admin
+          getAllTasks(currentPage);
+        } else {
+          setTasks((prev) =>
+            prev.map((task) =>
+              task.id === taskId
+                ? { ...task, priority: updatedTask.priority }
+                : task
+            )
+          );
+        }
         toast.success(`Task priority updated to: ${priority}`);
       } else {
         const error = await res.json();
@@ -403,7 +485,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     }
 
     const task = tasks.find((t) => t.id === taskId);
-    if (task && task.createdBy.id !== currentUser.id) {
+    if (!currentUser.role === 'admin' && task && task.createdBy.id !== currentUser.id) {
       toast.error("Only the task creator can delete this task");
       return;
     }
@@ -424,7 +506,12 @@ export function TaskProvider({ children }: { children: ReactNode }) {
       }
 
       if (res.ok) {
-        setTasks((prev) => prev.filter((t) => t.id !== taskId));
+        if (currentUser.role === 'admin') {
+          // Refresh the task list for admin
+          getAllTasks(currentPage);
+        } else {
+          setTasks((prev) => prev.filter((t) => t.id !== taskId));
+        }
         setNotifications((prev) => prev.filter((n) => n.taskId !== taskId));
         toast.success("Task deleted");
       } else {
@@ -506,6 +593,9 @@ export function TaskProvider({ children }: { children: ReactNode }) {
       value={{
         tasks,
         notifications,
+        totalPages,
+        currentPage,
+        setCurrentPage,
         createTask,
         updateTask,
         updateTaskStatus,
@@ -513,6 +603,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
         deleteTask,
         getTasksAssignedToMe,
         getTasksCreatedByMe,
+        getAllTasks,
         getUnreadNotificationsCount,
         markNotificationAsRead,
       }}
