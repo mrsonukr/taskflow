@@ -73,12 +73,12 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     const fetchTasks = async () => {
       try {
         const [createdRes, assignedRes] = await Promise.all([
-          fetch(`https://task-server-dusky.vercel.app/api/tasks/created`, {
+          fetch(`https://task-backend-2tiy.onrender.com/api/tasks/created`, {
             headers: {
               Authorization: `Bearer ${localStorage.getItem("taskflow_token")}`,
             },
           }),
-          fetch(`https://task-server-dusky.vercel.app/api/tasks/assigned`, {
+          fetch(`https://task-backend-2tiy.onrender.com/api/tasks/assigned`, {
             headers: {
               Authorization: `Bearer ${localStorage.getItem("taskflow_token")}`,
             },
@@ -131,7 +131,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
 
     const fetchNotifications = async () => {
       try {
-        const res = await fetch(`https://task-server-dusky.vercel.app/api/notifications`, {
+        const res = await fetch(`https://task-backend-2tiy.onrender.com/api/notifications`, {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("taskflow_token")}`,
           },
@@ -185,7 +185,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     };
 
     try {
-      const res = await fetch(`https://task-server-dusky.vercel.app/api/tasks`, {
+      const res = await fetch(`https://task-backend-2tiy.onrender.com/api/tasks`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -253,7 +253,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     };
 
     try {
-      const res = await fetch(`https://task-server-dusky.vercel.app/api/tasks/${taskId}`, {
+      const res = await fetch(`https://task-backend-2tiy.onrender.com/api/tasks/${taskId}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -309,7 +309,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
 
     try {
       const res = await fetch(
-        `https://task-server-dusky.vercel.app/api/tasks/${taskId}/status`,
+        `https://task-backend-2tiy.onrender.com/api/tasks/${taskId}/status`,
         {
           method: "PATCH",
           headers: {
@@ -359,7 +359,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     }
 
     try {
-      const res = await fetch(`https://task-server-dusky.vercel.app/api/tasks/${taskId}`, {
+      const res = await fetch(`https://task-backend-2tiy.onrender.com/api/tasks/${taskId}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -409,7 +409,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     }
 
     try {
-      const res = await fetch(`https://task-server-dusky.vercel.app/api/tasks/${taskId}`, {
+      const res = await fetch(`https://task-backend-2tiy.onrender.com/api/tasks/${taskId}`, {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${localStorage.getItem("taskflow_token")}`,
@@ -468,7 +468,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
 
     try {
       const res = await fetch(
-        `https://task-server-dusky.vercel.app/api/notifications/${notificationId}/`,
+        `https://task-backend-2tiy.onrender.com/api/notifications/${notificationId}/`,
         {
           method: "PATCH",
           headers: {
